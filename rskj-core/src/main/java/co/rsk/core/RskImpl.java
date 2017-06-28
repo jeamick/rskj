@@ -26,6 +26,7 @@ import co.rsk.net.MessageHandler;
 import co.rsk.net.NodeBlockProcessor;
 import co.rsk.net.NodeMessageHandler;
 import co.rsk.net.handler.TxHandlerImpl;
+import co.rsk.scoring.PeerScoringManager;
 import org.ethereum.facade.EthereumImpl;
 import org.springframework.stereotype.Component;
 
@@ -35,9 +36,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class RskImpl extends EthereumImpl implements Rsk {
     private boolean isplaying;
-
     private NodeBlockProcessor nodeBlockProcessor;
-
+    private PeerScoringManager peerScoringManager;
     private MessageHandler messageHandler;
 
     @Override
@@ -51,11 +51,19 @@ public class RskImpl extends EthereumImpl implements Rsk {
     }
 
     @Override
+    public PeerScoringManager getPeerScoringManager() {
+        if (this.peerScoringManager == null)
+            this.peerScoringManager = new PeerScoringManager();
+
+        return this.peerScoringManager;
+    }
+
+    @Override
     public MessageHandler getMessageHandler() {
         if (this.messageHandler == null) {
             this.nodeBlockProcessor = getNodeBlockProcessor(); // Initialize nodeBlockProcessor if not done already.
             NodeMessageHandler handler = new NodeMessageHandler(this.nodeBlockProcessor, getChannelManager(),
-                    getWorldManager().getPendingState(), new TxHandlerImpl(getWorldManager()));
+                    getWorldManager().getPendingState(), new TxHandlerImpl(getWorldManager()), this.getPeerScoringManager());
             handler.start();
             this.messageHandler = handler;
         }
